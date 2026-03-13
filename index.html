@@ -793,19 +793,72 @@ async function loadPhotos(){
 }
 
 /* ── 과정 데이터 로컬스토리지 저장/로드 ── */
-function load(){
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9i_c0Ki8rCNXOzxIIl8XNZB21kyic5idN45HAOIGsm_5rPOuvsUNPnQVIJEE8xO4tb0zIEBG2haLG/pub?output=csv";
+
+async function load(){
   // 구버전 키 정리
   ['mg_v3','mg_v3_c','mg_v3_car','mg_v3_bus'].forEach(k=>{
     try{ localStorage.removeItem(k); }catch(e){}
   });
-  try{
-    const c=localStorage.getItem(LS+'_c');
-    D.courses = c ? JSON.parse(c) : [];
-  }catch(e){ D.courses=[]; }
+  
+  try {
+    // 1. 구글 시트에서 최신 CSV 데이터 가져오기
+    const response = await fetch(SHEET_URL);
+    const csvText = await response.text();
+    
+    // 2. CSV 데이터를 줄 단위로 쪼개기
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+    if(lines.length > 0) {
+      const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
+      
+      // '시작일', '과목명', '강의실' 열이 몇 번째에 있는지 찾기
+      const dI = Math.max(header.findIndex(h => h.includes('시작') || h.includes('날짜')), 1);
+      const nI = Math.max(header.findIndex(h => h.includes('과목') || h.includes('과정') || h.includes('명')), 2);
+      const rI = header.findIndex(h => h.includes('강의실') || h.includes('장소'));
+      
+      const res = [];
+      // 3. 데이터를 변환하여 앱에 맞게 저장
+      for(let i=1; i<lines.length; i++){
+        const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g,''));
+        const sd = cols[dI] || '';
+        const cn = cols[nI] || '';
+        // 구글 시트에 '강의실' 열이 있으면 그 값을, 없으면 빈칸을 넣음
+        const rm = (rI !== -1 && cols[rI]) ? cols[rI] : '';
+        if(sd && cn) res.push({startDate: sd, courseName: cn, room: rm});
+      }
+      D.courses = res;
+      
+      // 4. 데이터 로딩 완료 후 화면 새로고침
+      if(curScreen === 'home') renderHome();
+      if(curScreen === 'week') initWeek();
+      if(curScreen === 'admin') renderAdmin();
+      
+      // 5. 공유 링크(URL)로 직접 접속했을 때 해당 과정 팝업 띄우기
+      const params = new URLSearchParams(window.location.search);
+      const startD = params.get('sd');
+      const course = params.get('cn');
+      if(startD && course && D.courses.length){
+        ST.week = startD;
+        const idx = D.courses.findIndex(c => c.startDate === startD && c.courseName === course);
+        if(idx !== -1){
+          goTo('week');
+          setTimeout(()=> openPopup(idx), 300);
+        }
+      }
+    }
+  } catch(e) {
+    console.error('구글 시트 데이터 로드 실패:', e);
+    // 인터넷이 끊겼거나 시트 주소가 잘못되었을 때를 대비한 안전장치
+    try{
+      const c = localStorage.getItem(LS+'_c');
+      D.courses = c ? JSON.parse(c) : [];
+    }catch(err){ D.courses=[]; }
+  }
 }
+
 function save(){
-  try{ localStorage.setItem(LS+'_c', JSON.stringify(D.courses)); }
-  catch(e){ toast('⚠️ 과정 데이터 저장 오류'); }
+  // 이제 웹앱 자체에서는 저장하지 않고, 구글 시트에서 수정하도록 안내합니다.
+  toast('⚠️ 과정 추가 및 강의실 배정은 구글 스프레드시트에서 직접 수정해 주세요.');
 }
 
 // ═══════════════════════════════
