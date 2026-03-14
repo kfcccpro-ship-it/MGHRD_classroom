@@ -74,10 +74,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .popup-img-wrap img{width:100%;height:auto;object-fit:contain;display:block}
 /* ── ZOOM OVERLAY ── */
 .zoom-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;
-  align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+  align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);touch-action:none}
 .zoom-overlay.show{display:flex;animation:fadeIn .25s ease}
 .zoom-overlay img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;
-  -webkit-user-select:none;touch-action:pinch-zoom}
+  -webkit-user-select:none;touch-action:none;transform-origin:0 0;transition:transform .05s linear}
+.zoom-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);
+  font-size:13px;font-weight:600;pointer-events:none;transition:opacity .5s}
+.zoom-hint.hide{opacity:0}
 .popup-room-badge{position:absolute;top:10px;left:10px;
   font-size:14px;font-weight:800;padding:6px 14px;border-radius:20px;backdrop-filter:blur(6px)}
 .popup-room-badge.assigned{background:rgba(26,107,60,.85);color:#fff}
@@ -286,7 +289,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <body>
 
 <div class="toast" id="toast"></div>
-<div class="zoom-overlay" id="zoom-overlay" onclick="event.stopPropagation();closeZoom()"><img id="zoom-img" src="" alt="확대 보기"></div>
+<div class="zoom-overlay" id="zoom-overlay"><img id="zoom-img" src="" alt="확대 보기"><div class="zoom-hint" id="zoom-hint">두 손가락으로 확대 · 탭하여 닫기</div></div>
 
 <div class="pw-overlay" id="pw-overlay">
   <div class="pw-box">
@@ -647,8 +650,28 @@ function updatePwDots(){ for(let i=0;i<4;i++){ const el = document.getElementByI
 // UTILS
 // ═══════════════════════════════
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function openZoom(){ const src=document.getElementById('popup-img').src; document.getElementById('zoom-img').src=src; document.getElementById('zoom-overlay').classList.add('show'); document.body.style.overflow='hidden'; history.pushState({zoom:true},''); }
-function closeZoom(fromBack){ if(!document.getElementById('zoom-overlay').classList.contains('show')) return; document.getElementById('zoom-overlay').classList.remove('show'); document.body.style.overflow='hidden'; if(!fromBack) history.back(); }
+function openZoom(){ const src=document.getElementById('popup-img').src; const img=document.getElementById('zoom-img'); img.src=src; img.style.transform=''; zoomState={scale:1,x:0,y:0}; document.getElementById('zoom-overlay').classList.add('show'); document.getElementById('zoom-hint').classList.remove('hide'); setTimeout(()=>document.getElementById('zoom-hint').classList.add('hide'),2500); document.body.style.overflow='hidden'; history.pushState({zoom:true},''); }
+function closeZoom(fromBack){ if(!document.getElementById('zoom-overlay').classList.contains('show')) return; document.getElementById('zoom-overlay').classList.remove('show'); document.body.style.overflow='hidden'; zoomState={scale:1,x:0,y:0}; document.getElementById('zoom-img').style.transform=''; if(!fromBack) history.back(); }
+// ── PINCH ZOOM ──
+let zoomState={scale:1,x:0,y:0}; let zoomTouches=null; let zoomStartDist=0; let zoomStartScale=1; let zoomStartMid={x:0,y:0}; let zoomStartPos={x:0,y:0}; let zoomTapTime=0;
+function getDist(t){ return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY); }
+function getMid(t){ return {x:(t[0].clientX+t[1].clientX)/2, y:(t[0].clientY+t[1].clientY)/2}; }
+function applyZoom(){ const img=document.getElementById('zoom-img'); if(!img)return; const s=zoomState.scale; const tx=zoomState.x; const ty=zoomState.y; img.style.transform=`translate(${tx}px,${ty}px) scale(${s})`; img.style.transformOrigin='0 0'; }
+(function(){
+  const ov=document.getElementById('zoom-overlay');
+  ov.addEventListener('touchstart',function(e){
+    if(e.touches.length===2){ e.preventDefault(); zoomTouches=e.touches; zoomStartDist=getDist(e.touches); zoomStartScale=zoomState.scale; zoomStartMid=getMid(e.touches); zoomStartPos={x:zoomState.x,y:zoomState.y}; }
+    if(e.touches.length===1){ zoomTapTime=Date.now(); }
+  },{passive:false});
+  ov.addEventListener('touchmove',function(e){
+    if(e.touches.length===2 && zoomTouches){ e.preventDefault(); const dist=getDist(e.touches); const mid=getMid(e.touches); let newScale=zoomStartScale*(dist/zoomStartDist); newScale=Math.max(1,Math.min(5,newScale)); const dx=mid.x-zoomStartMid.x; const dy=mid.y-zoomStartMid.y; zoomState.scale=newScale; zoomState.x=zoomStartPos.x+dx; zoomState.y=zoomStartPos.y+dy; applyZoom(); }
+  },{passive:false});
+  ov.addEventListener('touchend',function(e){
+    if(e.touches.length<2){ zoomTouches=null; if(zoomState.scale<=1.05){ zoomState={scale:1,x:0,y:0}; applyZoom(); } }
+    if(e.touches.length===0 && e.changedTouches.length===1){ const dt=Date.now()-zoomTapTime; if(dt<300 && zoomState.scale<=1.05){ closeZoom(); } }
+  });
+  ov.addEventListener('click',function(e){ e.stopPropagation(); if(zoomState.scale<=1.05) closeZoom(); });
+})();
 window.addEventListener('popstate',function(e){
   if(document.getElementById('zoom-overlay').classList.contains('show')){ closeZoom(true); return; }
   if(document.getElementById('popup-overlay').classList.contains('show')){ document.getElementById('popup-overlay').classList.remove('show'); document.body.style.overflow=''; return; }
