@@ -286,7 +286,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <body>
 
 <div class="toast" id="toast"></div>
-<div class="zoom-overlay" id="zoom-overlay" onclick="closeZoom()"><img id="zoom-img" src="" alt="확대 보기"></div>
+<div class="zoom-overlay" id="zoom-overlay" onclick="event.stopPropagation();closeZoom()"><img id="zoom-img" src="" alt="확대 보기"></div>
 
 <div class="pw-overlay" id="pw-overlay">
   <div class="pw-box">
@@ -318,7 +318,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <div class="overlay" id="popup-overlay" onclick="closePopup(event)">
   <div class="popup" id="popup-box">
     <div class="popup-handle"></div>
-    <div class="popup-img-wrap" onclick="openZoom()">
+    <div class="popup-img-wrap" onclick="event.stopPropagation();openZoom()">
       <img id="popup-img" src="" alt="">
       <div class="popup-room-badge" id="popup-room-badge"></div>
     </div>
@@ -368,7 +368,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 
 <div id="s-week" class="screen">
   <div class="hdr">
-    <button class="bk" onclick="goTo('home')">← 홈</button>
+    <button class="bk" onclick="history.back()">← 홈</button>
     <h1>📅 과정 찾기</h1>
   </div>
   <div class="pbar"><div class="pfill" style="width:50%"></div></div>
@@ -408,7 +408,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 
 <div id="s-admin" class="screen">
   <div class="hdr adm">
-    <button class="bk" onclick="goTo('home')">← 홈</button>
+    <button class="bk" onclick="history.back()">← 홈</button>
     <h1>⚙️ 관리자</h1>
   </div>
   <div class="cnt">
@@ -630,12 +630,12 @@ const ADMIN_PW = '2026';
 let pwBuf = ''; let pwFails = 0; let pwLockUntil = 0; const PW_MAX_FAILS = 5; const PW_LOCK_MS = 30 * 1000;
 function isPwLocked(){ return Date.now() < pwLockUntil; }
 function pwLockMsg(){ const remain = Math.ceil((pwLockUntil - Date.now())/1000); return remain>0 ? `⏳ 잠금 중… ${remain}초 후 다시 시도` : ''; }
-function openPwOverlay(){ pwBuf = ''; updatePwDots(); const err = document.getElementById('pw-err'); err.textContent = isPwLocked() ? pwLockMsg() : ''; document.getElementById('pw-overlay').classList.add('show'); }
+function openPwOverlay(){ pwBuf = ''; updatePwDots(); const err = document.getElementById('pw-err'); err.textContent = isPwLocked() ? pwLockMsg() : ''; document.getElementById('pw-overlay').classList.add('show'); history.pushState({pw:true},''); }
 function pwInput(n){
   const err = document.getElementById('pw-err'); if(isPwLocked()){ err.textContent = pwLockMsg(); return; }
   if(pwBuf.length >= 4) return; pwBuf += n; updatePwDots();
   if(pwBuf.length === 4){ setTimeout(()=>{
-      if(pwBuf === ADMIN_PW){ pwFails = 0; document.getElementById('pw-overlay').classList.remove('show'); goTo('admin'); } 
+      if(pwBuf === ADMIN_PW){ pwFails = 0; document.getElementById('pw-overlay').classList.remove('show'); history.back(); setTimeout(()=>goTo('admin'),50); } 
       else { pwFails++; if(pwFails >= PW_MAX_FAILS){ pwLockUntil = Date.now() + PW_LOCK_MS; err.textContent = `🚫 비밀번호 오류가 여러 번 발생했습니다. ${Math.ceil(PW_LOCK_MS/1000)}초 잠금`; } 
       else { err.textContent = `❌ 비밀번호가 틀렸습니다 (${pwFails}/${PW_MAX_FAILS})`; } pwBuf = ''; updatePwDots(); }
     }, 200); }
@@ -647,8 +647,16 @@ function updatePwDots(){ for(let i=0;i<4;i++){ const el = document.getElementByI
 // UTILS
 // ═══════════════════════════════
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function openZoom(){ const src=document.getElementById('popup-img').src; document.getElementById('zoom-img').src=src; document.getElementById('zoom-overlay').classList.add('show'); document.body.style.overflow='hidden'; }
-function closeZoom(){ document.getElementById('zoom-overlay').classList.remove('show'); document.body.style.overflow=''; }
+function openZoom(){ const src=document.getElementById('popup-img').src; document.getElementById('zoom-img').src=src; document.getElementById('zoom-overlay').classList.add('show'); document.body.style.overflow='hidden'; history.pushState({zoom:true},''); }
+function closeZoom(fromBack){ if(!document.getElementById('zoom-overlay').classList.contains('show')) return; document.getElementById('zoom-overlay').classList.remove('show'); document.body.style.overflow='hidden'; if(!fromBack) history.back(); }
+window.addEventListener('popstate',function(e){
+  if(document.getElementById('zoom-overlay').classList.contains('show')){ closeZoom(true); return; }
+  if(document.getElementById('popup-overlay').classList.contains('show')){ document.getElementById('popup-overlay').classList.remove('show'); document.body.style.overflow=''; return; }
+  if(document.getElementById('pw-overlay').classList.contains('show')){ document.getElementById('pw-overlay').classList.remove('show'); return; }
+  if(curScreen==='guide'){ goTo('week',true); return; }
+  if(curScreen==='week'){ goTo('home',true); return; }
+  if(curScreen==='admin'){ goTo('home',true); return; }
+});
 function toast(msg,ms=2200){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),ms); }
 function svgImg(step){
   const id='g'+Math.random().toString(36).slice(2,7); const [l1,l2]=(step.desc||'').split('\n');
@@ -717,7 +725,7 @@ async function bulkDeleteCourses(){ if(COURSE_SEL.size === 0){ toast('삭제할 
 // NAV & HOME & WEEK SCREEN
 // ═══════════════════════════════
 let curScreen = 'home';
-function goTo(name){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('s-'+name).classList.add('active'); curScreen = name; window.scrollTo(0,0); if(name==='home') renderHome(); if(name==='week') initWeek(); if(name==='admin') renderAdmin(); if(name==='guide') renderGuide(); }
+function goTo(name,fromBack){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('s-'+name).classList.add('active'); const prev=curScreen; curScreen = name; window.scrollTo(0,0); if(!fromBack && prev!==name) history.pushState({screen:name},''); if(name==='home') renderHome(); if(name==='week') initWeek(); if(name==='admin') renderAdmin(); if(name==='guide') renderGuide(); }
 function renderHome(){ const el=document.getElementById('home-stat'); const n=D.courses.length; if(!n){ el.className='dstat empty'; el.textContent='⚠️ 일정 없음 — 관리자에서 CSV를 업로드해 주세요'; } else{ const ok=D.courses.filter(c=>c.room).length; el.className='dstat ok'; el.textContent=`✅ 과정 ${n}개 | 강의실 배정 ${ok}/${n}개`; } }
 function uniqueDates(){ const seen=new Set(),res=[]; D.courses.forEach(c=>{ if(!seen.has(c.startDate)){seen.add(c.startDate);res.push(c.startDate);} }); return res; }
 function initWeek(){
@@ -743,16 +751,17 @@ function openPopup(listIdx){
   ST.course = c.courseName; ST.roomId = c.room || ''; document.getElementById('popup-img').src = CAMPUS_PHOTO; document.getElementById('popup-title').textContent = c.courseName; document.getElementById('popup-meta').innerHTML = `<span>📅 ${esc(c.startDate)}</span>`;
   const badge = document.getElementById('popup-room-badge'); const roomLine = document.getElementById('popup-room-line');
   if(c.room){ badge.textContent = '📍 ' + c.room; badge.className = 'popup-room-badge assigned'; roomLine.innerHTML = `<span style="font-size:22px">🏛️</span> ${esc(c.room)}`; roomLine.className = 'popup-room-line assigned'; } else { badge.textContent = '⚠️ 강의실 미배정'; badge.className = 'popup-room-badge unassigned'; roomLine.innerHTML = `<span style="font-size:22px">⚠️</span> 아직 배정되지 않았습니다`; roomLine.className = 'popup-room-line unassigned'; }
-  document.getElementById('popup-overlay').classList.add('show'); document.body.style.overflow='hidden';
+  document.getElementById('popup-overlay').classList.add('show'); document.body.style.overflow='hidden'; history.pushState({popup:true},'');
 }
-function closePopup(e){ if(e && e.target !== document.getElementById('popup-overlay')) return; document.getElementById('popup-overlay').classList.remove('show'); document.body.style.overflow=''; }
+function closePopup(e,fromBack){ if(e && e.target !== document.getElementById('popup-overlay')) return; document.getElementById('popup-overlay').classList.remove('show'); document.body.style.overflow=''; if(!fromBack) history.back(); }
 function pickTransport(type){
   if(!ST.course){ toast('과정을 먼저 선택해 주세요'); return; } document.getElementById('popup-overlay').classList.remove('show'); document.body.style.overflow='';
+  history.back();
   ST.transport = type; applyGuideFont(type); const cache = PHOTO_CACHE[type]; const desc = getStepDesc(type); const count = Math.max(cache.filter(Boolean).length, desc.length, 1); ST.steps = [];
   for(let i=0;i<count;i++){ const d = desc[i] || {emoji:'📸',title:`${i+1}단계`,desc:'다음 안내를 따라 이동하세요.',bg1:'#1a6b3c',bg2:'#2d8c5e'}; ST.steps.push({...d, photoUrl: cache[i] || null}); }
-  ST.step = 0; goTo('guide');
+  ST.step = 0; setTimeout(()=>goTo('guide'),50);
 }
-function closeGuide(){ goTo('week'); }
+function closeGuide(){ history.back(); }
 function renderGuide(){
   applyGuideFont(ST.transport); const total=ST.steps.length, s=ST.steps[ST.step]; const first=ST.step===0, last=ST.step===total-1; const tcls=ST.transport==='car'?'car-b':'bus-b', ttxt=ST.transport==='car'?'🚗 자차':'🚌 버스';
   document.getElementById('guide-hdr').textContent=ST.transport==='car'?'🚗 자차 이동경로':'🚌 버스 이동경로'; const imgSrc = s.photoUrl || svgImg(s); const dots = ST.steps.map((_,i)=>`<div class="dot${i===ST.step?' on':''}"></div>`).join('');
@@ -897,6 +906,7 @@ async function resetData(){
 // INIT 연동
 // ═══════════════════════════════
 window.onload = async () => {
+  history.replaceState({screen:'home'},'');
   toast('⏳ 서버에서 데이터를 불러오는 중입니다...', 5000);
   await load();
   await loadStepCfg();
