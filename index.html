@@ -452,6 +452,18 @@ a{text-decoration:none;color:inherit}
   .popup-room-line strong{font-size:28px}
 }
 
+
+/* v9 accessibility tuning: enlarge smallest text and force cleaner line breaks */
+.hchip{font-size:18px;padding:11px 16px;gap:8px}
+.hfic{width:46px;height:46px;font-size:21px;border-radius:14px}
+.hfi span{font-size:20px;line-height:1.45;white-space:normal;word-break:keep-all}
+.hmeta,.btnadm,.hnote,.ts-kicker,.ts-meta,.cbadge,.popup-ask,.popup-room-line .room-label,.zoom-hint,.sbadge,.tbadge,.guide-destination span,.csvex,.usub,.photo-slot .slot-num,.atable th,.atable td,.dtcell,.cncell,.rmtxt,.bulkbar .cklbl,.bulkbar .selcount,.bulkdel,.slbl,.fontlbl,.fontval,.stnum,.stdesc,.btnmini,.cltitle,.ddlabel,.sarr,.popup-meta,.ts-desc,.tsub,.tlabel,.stedit-title,.sttitle{font-size:18px !important;line-height:1.6}
+.ts-meta,.cbadge,.sbadge,.tbadge,.btnadm,.bulkbar .cklbl,.bulkbar .selcount,.bulkdel,.btnmini{font-weight:800}
+.ts-title{line-height:1.28}
+.ts-subtitle{font-size:18px;line-height:1.6;word-break:keep-all}
+.guide-destination{font-size:18px;line-height:1.6}
+.popup-room-line .room-label{margin-bottom:6px}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -518,9 +530,9 @@ a{text-decoration:none;color:inherit}
         <div class="hchip"><strong>3</strong> 경로 확인</div>
       </div>
       <div class="hfeats">
-        <div class="hfi"><div class="hfic">1</div><span>시작일·과정별 강의실을 바로 확인해요.</span></div>
-        <div class="hfi"><div class="hfic">2</div><span>도착 방식에 따라 출발 지점을 다르게 안내해요.</span></div>
-        <div class="hfi"><div class="hfic">3</div><span>사진 순서대로 이동 동선을 쉽게 따라가요.</span></div>
+        <div class="hfi"><div class="hfic">1</div><span>시작일·과정별 강의실을<br>바로 확인해요.</span></div>
+        <div class="hfi"><div class="hfic">2</div><span>도착한 방법에 맞춰<br>출발 지점을 안내해요.</span></div>
+        <div class="hfi"><div class="hfic">3</div><span>사진 순서대로<br>이동 동선을 따라가요.</span></div>
       </div>
     </div>
     <div class="hbot">
@@ -578,7 +590,7 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="ts-hero">
       <div class="ts-title">어떻게<br>인재개발원에 도착하셨나요?</div>
-      <div class="ts-subtitle">어떻게 오셨는지에 따라 안내가 달라져요</div>
+      <div class="ts-subtitle">어떻게 오셨는지에 따라<br>안내가 달라져요</div>
     </div>
     <div class="ts-room-info" id="ts-room-info"></div>
     <div class="ts-body">
