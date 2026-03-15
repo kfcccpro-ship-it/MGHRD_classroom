@@ -127,10 +127,13 @@ a{text-decoration:none;color:inherit}
 .chev{margin-left:auto;color:#B0B8C1;font-size:20px;flex-shrink:0}
 
 /* week list */
-#s-week #clist-area .cinfo h3{font-size:25px;line-height:1.22;margin-bottom:10px}
-#s-week #clist-area .rtag{font-size:15px;padding:8px 12px}
-#s-week #clist-area .cicon{width:58px;height:58px;border-radius:18px;font-size:22px}
-#s-week #clist-area .card{padding:20px 18px}
+#s-week #clist-area .card{padding:16px 16px}
+#s-week #clist-area .crow{gap:10px;align-items:flex-start}
+#s-week #clist-area .cicon{width:28px;height:28px;border-radius:10px;font-size:12px}
+#s-week #clist-area .cinfo{min-width:0;flex:1}
+#s-week #clist-area .cinfo h3{font-size:18px;line-height:1.35;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#s-week #clist-area .rtag{display:block;max-width:100%;font-size:13px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#s-week #clist-area .chev{font-size:18px;padding-top:3px}
 .ddwrap{position:relative;margin-bottom:28px}
 .ddlabel{font-size:14px;font-weight:800;color:var(--text-2);margin-bottom:10px}
 .csel{
@@ -521,9 +524,10 @@ a{text-decoration:none;color:inherit}
   <div class="hw">
     <div class="hd1"></div><div class="hd2"></div>
     <div class="htop">
-      <div class="horg">MG인재개발원 · 강의실 안내</div>
+      <div class="horg">MG인재개발원<br>강의실 안내</div>
       <h1 class="htit">내 강의실을<br>빠르게 찾아보세요</h1>
       <p class="hsub">시작일과 과정을 선택하면 강의실과 이동 경로를 한 번에 확인할 수 있어요.</p>
+      <button class="btnstart off btnstart-top" id="start-btn" onclick="handleStartBtn()"><span class="main" id="start-btn-main">바로 시작하기</span><span class="sub" id="start-btn-sub">안내 준비 중</span></button>
       <div class="hchips">
         <div class="hchip"><strong>1</strong> 시작일 선택</div>
         <div class="hchip"><strong>2</strong> 과정 선택</div>
@@ -536,7 +540,6 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
     <div class="hbot">
-      <button class="btnstart off" id="start-btn" onclick="handleStartBtn()"><span class="main" id="start-btn-main">바로 시작하기</span><span class="sub" id="start-btn-sub">안내 준비 중</span></button>
       <button class="btnadm" onclick="openPwOverlay()">관리자 화면 열기</button>
       <div class="hmeta">오늘의 안내 상태</div>
       <div class="dstat" id="home-stat">데이터를 불러오는 중입니다</div>
